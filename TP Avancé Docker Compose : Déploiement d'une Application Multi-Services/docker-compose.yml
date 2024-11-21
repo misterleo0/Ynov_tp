@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: front/my-app/Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:3000"  # L'application frontend écoute sur le port 3000 à l'intérieur
+    networks:
+      - app-network
+    depends_on:
+      - backend1
+      - backend2
+
+  backend1:
+    build:
+      context: .
+      dockerfile: back/Dockerfile
+    container_name: backend1
+    ports:
+      - "3001:3000"  # Backend 1 écoute sur le port 3000 à l'intérieur, exposé sur 3001
+    networks:
+      - app-network
+    environment:
+      - BACKEND_NAME=Backend1
+
+  backend2:
+    build:
+      context: .
+      dockerfile: back/Dockerfile
+    container_name: backend2
+    ports:
+      - "3002:3000"  # Backend 2 écoute sur le port 3000 à l'intérieur, exposé sur 3002
+    networks:
+      - app-network
+    environment:
+      - BACKEND_NAME=Backend2
+
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: nginx
+    ports:
+      - "80:80"  # Nginx écoute sur le port 8080 sur l'hôte
+    networks:
+      - app-network
+    depends_on:
+      - frontend
+      - backend1
+      - backend2
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d  # Monté pour la configuration Nginx
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: leo
+      POSTGRES_PASSWORD: leogang
+      POSTGRES_DB: ouimario
+    networks:
+      - app-network
+    ports:
+      - "5432:5432"  # PostgreSQL expose le port 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
